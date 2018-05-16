@@ -3,8 +3,6 @@ package com.epam.rd.vlasenko.container;
 import com.epam.rd.vlasenko.bean.BeanDefinition;
 import com.epam.rd.vlasenko.sorting.DfsTopologicalSorting;
 import com.epam.rd.vlasenko.sorting.TopologicalSorting;
-
-import java.util.ArrayDeque;
 import java.util.Map;
 
 class DependencyBuilder {
@@ -22,8 +20,8 @@ class DependencyBuilder {
     }
 
     <T> T createBean(String beanId) {
-        ArrayDeque<BeanDefinition> deque = sorting.getDependencyGraph(beanId);
-        System.out.println(deque);
+        Map<String, BeanDefinition> beanDefinitionQueue = sorting.getDependencyGraph(beanId);
+        System.out.println(beanDefinitionQueue);
         return null;
     }
 }

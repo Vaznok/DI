@@ -13,7 +13,7 @@ import java.util.*;
 
 public class IniDiContainer implements DiContainer {
     private final File config;
-    private final DependencyBuilder dependencyBuilder;
+    private DependencyBuilder dependencyBuilder;
     private final Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
 
     public IniDiContainer(String config) throws ConfigurationException {
