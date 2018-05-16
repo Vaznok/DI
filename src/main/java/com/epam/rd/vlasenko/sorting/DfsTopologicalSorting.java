@@ -10,16 +10,16 @@ import static com.epam.rd.vlasenko.bean.ConstructorParamType.REF;
 public class DfsTopologicalSorting implements TopologicalSorting<BeanDefinition> {
     private final Map<String, BeanDefinition> beanDefinitionMap;
     private Set<BeanDefinition> visited;
-    private Map<String, BeanDefinition> beanDefinitionQueue;
+    private List<BeanDefinition> beanDefinitionQueue;
 
     public DfsTopologicalSorting(Map<String, BeanDefinition> beanDefinitionMap) {
         this.beanDefinitionMap = beanDefinitionMap;
         this.visited = new HashSet<>();
-        this.beanDefinitionQueue = new HashMap<>();
+        this.beanDefinitionQueue = new ArrayList<>();
     }
 
     @Override
-    public Map<String, BeanDefinition> getDependencyGraph(String beanId) {
+    public List<BeanDefinition> getDependencyGraph(String beanId) {
         BeanDefinition beanDefinition = beanDefinitionMap.get(beanId);
         buildGraph(beanDefinition);
         return beanDefinitionQueue;
@@ -39,6 +39,6 @@ public class DfsTopologicalSorting implements TopologicalSorting<BeanDefinition>
                 buildGraph(beanDefinitionMap.get(param.getValue()));
             }
         }
-        beanDefinitionQueue.put(beanDefinition.getId(), beanDefinition);
+        beanDefinitionQueue.add(beanDefinition);
     }
 }

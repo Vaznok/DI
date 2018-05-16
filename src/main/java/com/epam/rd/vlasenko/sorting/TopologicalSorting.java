@@ -1,7 +1,7 @@
 package com.epam.rd.vlasenko.sorting;
 
-import java.util.Map;
+import java.util.List;
 
 public interface TopologicalSorting<T> {
-    Map<String, T> getDependencyGraph(String beanId);
+    List<T> getDependencyGraph(String beanId);
 }

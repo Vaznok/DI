@@ -41,8 +41,9 @@ public class IniDiContainer implements DiContainer {
         Class<?> beanDefinitionClass = beanDefinitionMap.get(beanId).getClazz();
         if(beanDefinitionClass.getName().equals(clazz.getName())) {
             return dependencyBuilder.createBean(beanId);
+        } else {
+            throw new IllegalArgumentException(String.format("Incorrect class '%s' for beanId '%s'", clazz, beanId));
         }
-        throw new IllegalArgumentException(String.format("Incorrect class '%s' for beanId '%s'", clazz, beanId));
     }
 
     private DependencyBuilder createDependencyBuilder() throws ConfigurationException {

@@ -10,7 +10,8 @@ public class Demo {
 
         IniDiContainer container = new IniDiContainer("context.ini");
 
-        MovieMaker movieMaker = container.getInstance(MovieMaker.class, "movieMaker");
         Supervisor supervisor = container.getInstance(Supervisor.class, "supervisor");
+        MovieMaker movieMaker = container.getInstance(MovieMaker.class, "movieMaker");
+
     }
 }
