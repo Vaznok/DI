@@ -1,9 +1,9 @@
 package com.epam.rd.vlasenko.example;
 
 public class ColonMovieFinder {
-    private String filename;
+    private String fileName;
 
-    public ColonMovieFinder(String filename) {
-        this.filename = filename;
+    public ColonMovieFinder(String fileName) {
+        this.fileName = fileName;
     }
 }

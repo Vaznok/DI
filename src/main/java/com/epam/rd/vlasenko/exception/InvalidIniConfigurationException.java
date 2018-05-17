@@ -1,6 +1,6 @@
 package com.epam.rd.vlasenko.exception;
 
-public class InvalidIniConfigurationException extends RuntimeException {
+public class InvalidIniConfigurationException extends DiContainerUncheckedException {
     public InvalidIniConfigurationException() {
     }
 

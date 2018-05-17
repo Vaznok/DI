@@ -37,10 +37,10 @@ public class IniDiContainer implements DiContainer {
     }
 
     @Override
-    public <T> T getInstance(Class clazz, String beanId) {
+    public <T> T getInstance(Class<T> clazz, String beanId) {
         Class<?> beanDefinitionClass = beanDefinitionMap.get(beanId).getClazz();
         if(beanDefinitionClass.getName().equals(clazz.getName())) {
-            return dependencyBuilder.createBean(beanId);
+            return clazz.cast(dependencyBuilder.createEntity(beanId));
         } else {
             throw new IllegalArgumentException(String.format("Incorrect class '%s' for beanId '%s'", clazz, beanId));
         }
