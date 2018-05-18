@@ -1,9 +1,9 @@
 package com.epam.rd.vlasenko.example;
 
-public class MovieMaker2 {
+public class MovieSeller {
     private MovieLister movieLister;
 
-    public MovieMaker2(MovieLister movieLister) {
+    public MovieSeller(MovieLister movieLister) {
         this.movieLister = movieLister;
     }
 }

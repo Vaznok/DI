@@ -4,7 +4,6 @@ import com.epam.rd.vlasenko.bean.BeanDefinition;
 import com.epam.rd.vlasenko.bean.ConstructorParam;
 import com.epam.rd.vlasenko.exception.BeanReflectionBuildException;
 import com.epam.rd.vlasenko.exception.InconvertibleTypeException;
-import com.epam.rd.vlasenko.sorting.DfsTopologicalSorting;
 import com.epam.rd.vlasenko.sorting.TopologicalSorting;
 
 import java.lang.reflect.Constructor;
@@ -15,26 +14,20 @@ import java.util.*;
 import static com.epam.rd.vlasenko.bean.ConstructorParamType.VAL;
 
 class DependencyBuilder {
-    private Map<String, BeanDefinition> beanDefinitionMap;
     private TopologicalSorting sorting;
-    private Map<String, Object> beans = new HashMap<>();
+    private Map<String, Object> beans;
 
-    public DependencyBuilder(Map<String, BeanDefinition> beanDefinitionMap, TopologicalSorting sorting) {
-        this.beanDefinitionMap = beanDefinitionMap;
-        this.sorting = sorting;
-    }
-
-    DependencyBuilder(Map<String, BeanDefinition> beanDefinitionMap) {
-        this.beanDefinitionMap = beanDefinitionMap;
-        this.sorting = new DfsTopologicalSorting(beanDefinitionMap);
+    DependencyBuilder(TopologicalSorting sorting) {
+        this.sorting = Objects.requireNonNull(sorting);
+        this.beans = new HashMap<>();
     }
 
     Object createEntity(String beanId) {
         if(beans.containsKey(beanId)) {
             return beans.get(beanId);
         }
-        List<BeanDefinition> beanDefinitionQueue = sorting.getDependencyGraph(beanId);
-        for(BeanDefinition beanDefinition : beanDefinitionQueue) {
+        List<BeanDefinition> beanDefinitionList = sorting.getDependencyGraph(beanId);
+        for(BeanDefinition beanDefinition : beanDefinitionList) {
             if(beans.containsKey(beanDefinition.getId())) {
                 continue;
             }

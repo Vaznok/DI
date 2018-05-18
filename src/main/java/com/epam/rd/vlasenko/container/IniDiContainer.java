@@ -3,7 +3,10 @@ package com.epam.rd.vlasenko.container;
 import com.epam.rd.vlasenko.bean.BeanDefinition;
 import com.epam.rd.vlasenko.bean.ConstructorParam;
 import com.epam.rd.vlasenko.bean.ConstructorParamType;
+import com.epam.rd.vlasenko.exception.AutoBeanDetectionException;
 import com.epam.rd.vlasenko.exception.InvalidIniConfigurationException;
+import com.epam.rd.vlasenko.sorting.DfsTopologicalSorting;
+import com.epam.rd.vlasenko.sorting.TopologicalSorting;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -12,28 +15,29 @@ import java.io.File;
 import java.util.*;
 
 public class IniDiContainer implements DiContainer {
-    private final File config;
+    private File config;
+    private Map<String, BeanDefinition> beanDefinitionMap;
+    private TopologicalSorting sorting;
     private DependencyBuilder dependencyBuilder;
-    private final Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
 
-    public IniDiContainer(String config) throws ConfigurationException {
-        if(!config.endsWith(".ini")) {
-            throw new InvalidIniConfigurationException("Invalid file extension. Expected '.ini'");
-        }
-        this.config = (new File("src/main/resources/" + config));
-        this.dependencyBuilder = createDependencyBuilder();
+    public IniDiContainer(String config, TopologicalSorting sorting) {
+        this.config = Objects.requireNonNull(createFileInstance(config));
+        this.beanDefinitionMap = Objects.requireNonNull(createBeanDefinitionMap());
+        this.sorting = Objects.requireNonNull(sorting);
+        this.dependencyBuilder = new DependencyBuilder(sorting);
+    }
+
+    public IniDiContainer(String config) {
+        this.config = Objects.requireNonNull(createFileInstance(config));
+        this.beanDefinitionMap = Objects.requireNonNull(createBeanDefinitionMap());
+        this.sorting = new DfsTopologicalSorting(beanDefinitionMap);
+        this.dependencyBuilder = new DependencyBuilder(sorting);
     }
 
     @Override
-    public <T> T getInstance(Class clazz) {
-        /*Set<BeanDefinition> beanDefinitionSet = beansDefinitions.get(clazz);
-        if(beanDefinitionSet.size() > 1) {
-            throw new IllegalArgumentException(String.format("There are %d bean definitions for %s. " +
-                    "Choose one manually.", beanDefinitionSet.size(), clazz.getName()));
-        } else {
-            return getInstance(clazz, beanDefinitionSet.iterator().next().getId());
-        }*/
-        return null;
+    public <T> T getInstance(Class<T> clazz) {
+        String beanId = getBeanIdByClass(clazz);
+        return getInstance(clazz, beanId);
     }
 
     @Override
@@ -46,8 +50,22 @@ public class IniDiContainer implements DiContainer {
         }
     }
 
-    private DependencyBuilder createDependencyBuilder() throws ConfigurationException {
-        HierarchicalINIConfiguration confObj = new HierarchicalINIConfiguration(config);
+    private File createFileInstance(String fileName) {
+        if(!fileName.endsWith(".ini")) {
+            throw new InvalidIniConfigurationException("Invalid file extension. Expected '.ini'");
+        }
+        return new File("src/main/resources/" + fileName);
+    }
+
+    private Map<String, BeanDefinition> createBeanDefinitionMap() {
+        Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
+
+        HierarchicalINIConfiguration confObj;
+        try {
+            confObj = new HierarchicalINIConfiguration(config);
+        } catch (ConfigurationException e) {
+            throw new InvalidIniConfigurationException("Attempt to build HierarchicalINIConfiguration failed", e);
+        }
 
         Set sections = confObj.getSections();
         for (Object section : sections) {
@@ -62,14 +80,14 @@ public class IniDiContainer implements DiContainer {
             if(beanDefinitionMap.containsKey(beanId)) {
                 throw new InvalidIniConfigurationException(String.format("beanId '%s' in context must be unique", beanId));
             }
-            Set<ConstructorParam> constructorsList = createConstructorsList(confObj, sectionName);
+            Set<ConstructorParam> constructorsList = createConstructorsSet(confObj, sectionName);
             BeanDefinition beanDefinition = new BeanDefinition(clazz, beanId, constructorsList);
             beanDefinitionMap.put(beanId, beanDefinition);
         }
-        return new DependencyBuilder(beanDefinitionMap);
+        return beanDefinitionMap;
     }
 
-    private Set<ConstructorParam> createConstructorsList(HierarchicalINIConfiguration confObj, String sectionName) {
+    private Set<ConstructorParam> createConstructorsSet(HierarchicalINIConfiguration confObj, String sectionName) {
         Set<ConstructorParam> constructorsSet = new HashSet<>();
 
         SubnodeConfiguration sectionBody = confObj.getSection(sectionName);
@@ -78,9 +96,9 @@ public class IniDiContainer implements DiContainer {
             String keyName = iterator.next().toString();
             String valueName = sectionBody.getString(keyName);
 
+            // TODO: 5/18/2018 change on normal regex with validation
             String[] splitedValueName = valueName.split(":");
             ConstructorParamType type = ConstructorParamType.fromString(splitedValueName[0]);
-
             ConstructorParam constructorParam = new ConstructorParam(keyName, splitedValueName[1], type);
             if(constructorsSet.contains(constructorParam)) {
                 throw new InvalidIniConfigurationException(String.format("constructorId '%s' for bean definition must be unique", keyName));
@@ -99,5 +117,35 @@ public class IniDiContainer implements DiContainer {
             throw new InvalidIniConfigurationException(String.format("Class '%s' not found", className), e);
         }
         return clazz;
+    }
+
+    private String getBeanIdByClass(Class clazz) {
+        Map<String, String> uniqueBean = new HashMap<>();
+        String uniqueClassName = clazz.getName();
+
+        HierarchicalINIConfiguration confObj;
+        try {
+            confObj = new HierarchicalINIConfiguration(config);
+        } catch (ConfigurationException e) {
+            throw new InvalidIniConfigurationException("Attempt to build HierarchicalINIConfiguration failed", e);
+        }
+
+        Set sections = confObj.getSections();
+        for (Object section : sections) {
+            String sectionName = section.toString();
+
+            String[] splitedSectionName = sectionName.split(":");
+            String className = splitedSectionName[0].trim();
+            String beanId = splitedSectionName[1].trim();
+
+            if(uniqueClassName.equals(className)) {
+                if(!uniqueBean.containsKey(className)) {
+                    uniqueBean.put(className, beanId);
+                } else {
+                    throw new AutoBeanDetectionException("There are some bean definitions in context. Please, indicate required beanId");
+                }
+            }
+        }
+        return uniqueBean.get(uniqueClassName);
     }
 }

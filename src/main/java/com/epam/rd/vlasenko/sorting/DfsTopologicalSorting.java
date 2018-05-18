@@ -7,22 +7,23 @@ import java.util.*;
 
 import static com.epam.rd.vlasenko.bean.ConstructorParamType.REF;
 
+// TODO: 5/18/2018 cyclic dependency handler
 public class DfsTopologicalSorting implements TopologicalSorting<BeanDefinition> {
     private final Map<String, BeanDefinition> beanDefinitionMap;
     private Set<BeanDefinition> visited;
-    private List<BeanDefinition> beanDefinitionQueue;
+    private List<BeanDefinition> beanDefinitionList;
 
     public DfsTopologicalSorting(Map<String, BeanDefinition> beanDefinitionMap) {
-        this.beanDefinitionMap = beanDefinitionMap;
+        this.beanDefinitionMap = Objects.requireNonNull(beanDefinitionMap);
         this.visited = new HashSet<>();
-        this.beanDefinitionQueue = new ArrayList<>();
+        this.beanDefinitionList = new ArrayList<>();
     }
 
     @Override
     public List<BeanDefinition> getDependencyGraph(String beanId) {
         BeanDefinition beanDefinition = beanDefinitionMap.get(beanId);
         buildGraph(beanDefinition);
-        return beanDefinitionQueue;
+        return beanDefinitionList;
     }
 
     private void buildGraph(BeanDefinition beanDefinition) {
@@ -39,6 +40,6 @@ public class DfsTopologicalSorting implements TopologicalSorting<BeanDefinition>
                 buildGraph(beanDefinitionMap.get(param.getValue()));
             }
         }
-        beanDefinitionQueue.add(beanDefinition);
+        beanDefinitionList.add(beanDefinition);
     }
 }
